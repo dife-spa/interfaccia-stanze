@@ -1,6 +1,18 @@
+/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Geist Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
 
 :root {
   --background: #ffffff;
@@ -14,8 +26,17 @@
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+
+
+@keyframes pulseOpacity {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pulse {
+  animation: pulseOpacity 3s ease-in-out infinite;
 }
