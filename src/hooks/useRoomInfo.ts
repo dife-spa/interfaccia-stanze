@@ -1,42 +1,36 @@
 // src/hooks/useRoomInfo.ts
-"use client";
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
-export interface RoomInfoData {
-  id: number;
-  nome: string;
-  descrizione: string;
-  posizione: number;
-  capienza: number;
-  accessori: string;
-}
-
-export function useRoomInfo(roomId: number) {
-  const [roomInfo, setRoomInfo] = useState<RoomInfoData | null>(null);
+export function useRoomInfo(roomId?: number) {
+  const [roomInfo, setRoomInfo] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRoomInfo = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('stanze')
-      .select('*')
-      .eq('id', roomId)
-      .single();
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
+  useEffect(() => {
+    if (roomId === undefined) {
+      // If no room id, do nothing (or reset state).
+      setLoading(true);
       return;
     }
-
-    setRoomInfo(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
+    const fetchRoomInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('stanze')
+          .select('*')
+          .eq('id', roomId)
+          .single();
+        if (error) {
+          setError(error.message);
+        } else {
+          setRoomInfo(data);
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchRoomInfo();
   }, [roomId]);
 

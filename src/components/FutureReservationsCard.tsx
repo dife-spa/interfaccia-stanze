@@ -52,8 +52,8 @@ const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reserva
   if (reservations.length === 0) {
     return (
       <div className="h-full bg-black/20 text-white overflow-hidden p-4">
-        <div className="text-center text-xs text-white/70">
-          Non ci sono prenotazioni future
+        <div className="text-center text-lg text-white/70">
+          Non ci sono prenotazioni attive
         </div>
       </div>
     );
@@ -74,8 +74,8 @@ const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reserva
   return (
     <div className="h-full bg-black/20 text-white overflow-hidden flex flex-col">
       {/* Card Header */}
-      <div className="bg-black/40 py-2 px-4">
-        <h2 className="text-base md:text-xl font-bold">Prenotazioni Future</h2>
+      <div className="bg-black/40 py-4 px-4">
+        <h2 className="text-base font-bold">Prossime prenotazioni</h2>
       </div>
       {/* Grouped Table for Reservations */}
       <div className="flex-1 overflow-auto">
@@ -85,14 +85,14 @@ const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reserva
               <React.Fragment key={dateKey}>
                 {/* Group Header Row */}
                 <tr>
-                  <td colSpan={3} className="px-2 py-1 text-[0.8rem] font-medium text-white bg-black/30">
+                  <td colSpan={3} className="px-4 py-1 text-[1rem] font-medium text-white bg-black/30">
                     {getGroupLabel(dateKey)}
                   </td>
                 </tr>
                 {/* Sub-header Row for Columns */}
                 <tr className="bg-black/30">
-                  <th className="px-2 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
-                    Utente
+                  <th className="px-4 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
+                    Prenotazione di
                   </th>
                   <th className="px-2 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
                     Orario
@@ -102,34 +102,34 @@ const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reserva
                   </th>
                 </tr>
                 {grouped[dateKey].map((res, index) => (
-                  <tr key={index}>
-                    <td className="px-2 py-1 whitespace-nowrap text-[0.8rem] text-white">
+                  <tr key={index} className="border-b border-white/20">
+                    <td className="px-4 py-4 whitespace-nowrap text-[1rem] text-white">
                       <div className="flex items-center space-x-2">
                         {res.userPic ? (
                           <img
                             src={res.userPic}
                             alt={`${res.user_nome} ${res.user_cognome}`}
-                            className="w-4 h-4 rounded-full"
+                            className="w-6 h-6 rounded-full"
                           />
                         ) : (
-                          <div className="w-4 h-4 rounded-full bg-white text-black flex items-center justify-center text-[0.6rem] font-bold">
+                          <div className="w-6 h-6 rounded-full bg-white text-black/90 flex items-center justify-center text-[0.8rem] font-medium">
                             {res.user_nome.charAt(0).toUpperCase()}{res.user_cognome.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div>
                           <span>{res.user_nome} {res.user_cognome}</span>
                           {res.n_partecipanti > 1 && (
-                            <div className="text-[0.6rem] text-white/70">
+                            <div className="text-[0.8rem] text-white/70">
                               e altri {res.n_partecipanti}
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-[0.8rem] text-white">
+                    <td className="px-2 py-1 whitespace-nowrap text-[1rem] text-white">
                       <span>{formatTime(res.ora_inizio)} - {formatTime(res.ora_fine)}</span>
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-[0.8rem] text-white">
+                    <td className="px-2 py-1 whitespace-nowrap text-[1rem] text-white">
                       {res.tipologia}
                     </td>
                   </tr>

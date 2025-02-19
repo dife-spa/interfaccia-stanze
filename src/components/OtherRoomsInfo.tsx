@@ -70,25 +70,31 @@ const OtherRoomsInfo: React.FC<OtherRoomsInfoProps> = ({ excludeRoomId }) => {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
       
-      // 3. Fetch today's reservations for all rooms.
+      // 3. Compute room IDs from roomsData.
       const roomIds = (roomsData || []).map((room: Room) => room.id);
-      const { data: reservationsData, error: reservationsError } = await supabase
-        .from('prenotazioni')
-        .select('*')
-        .in('id_stanza', roomIds || [])
-        .eq('data', todayStr);
-      if (reservationsError) {
-        setError(reservationsError.message);
-        setLoading(false);
-        return;
+      
+      // 4. Fetch today's reservations only if roomIds is non-empty.
+      let reservationsData: Reservation[] = [];
+      if (roomIds.length > 0) {
+        const { data, error: reservationsError } = await supabase
+          .from('prenotazioni')
+          .select('*')
+          .in('id_stanza', roomIds)
+          .eq('data', todayStr);
+        if (reservationsError) {
+          setError(reservationsError.message);
+          setLoading(false);
+          return;
+        }
+        reservationsData = data || [];
       }
-
-      // 4. For each room, determine its status based on active reservations.
+      
+      // 5. For each room, determine its status based on active reservations.
       const updatedRooms: OtherRoom[] = (roomsData || [])
         .filter((room: Room) => (excludeRoomId ? room.id !== excludeRoomId : true))
         .map((room: Room) => {
           let status: "In uso" | "Libera" = "Libera";
-          if (reservationsData) {
+          if (reservationsData.length > 0) {
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const roomReservations = (reservationsData as Reservation[]).filter(
@@ -129,10 +135,11 @@ const OtherRoomsInfo: React.FC<OtherRoomsInfoProps> = ({ excludeRoomId }) => {
         return (
           <div key={room.id} className="bg-black/20 p-4 flex flex-col space-y-2 w-full">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">{room.nome}</h3>
+              <h3 className="text-lg font-bold text-white">Sala {room.nome}</h3>
               <div className="text-xl font-bold text-white">{room.status}</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
               {features.map((feature, idx) => (
                 <div key={idx} className="flex items-center">
                   {featureIconMap[feature] || (
@@ -141,8 +148,9 @@ const OtherRoomsInfo: React.FC<OtherRoomsInfoProps> = ({ excludeRoomId }) => {
                 </div>
               ))}
               <div className="flex items-center gap-1">
-                <UserIcon className="w-5 h-5 text-white" />
+                <UserGroupIcon className="w-5 h-5 text-white" />
                 <span className="text-xs text-white">{room.capienza}</span>
+              </div>
               </div>
               <div className="flex items-center gap-1">
                 <MapPinIcon className="w-5 h-5 text-white" />
