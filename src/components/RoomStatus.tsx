@@ -56,7 +56,7 @@ const RoomStatus: React.FC<RoomStatusProps> = ({ status, currentReservation, nex
 
   return (
     <div className="text-white mt-[-2rem]">
-      <h1 className={`text-[12rem] font-bold leading-[0.8] ${status === "In uso" ? "pulse" : ""}`}>
+      <h1 className={`text-[10rem] font-bold leading-[0.8] ${status === "In uso" ? "pulse" : ""}`}>
         {status}
       </h1>
       {timeText && (

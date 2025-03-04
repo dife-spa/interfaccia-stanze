@@ -1,8 +1,9 @@
-// src/components/FutureReservationsCard.tsx
+"use client";
+
 import React from 'react';
 import { ClockIcon, TagIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
-interface FutureReservation {
+export interface FutureReservation {
   id_stanza: number;
   ora_inizio: string;
   ora_fine: string;
@@ -16,129 +17,133 @@ interface FutureReservation {
 
 interface FutureReservationsCardProps {
   reservations: FutureReservation[];
+  currentReservation?: FutureReservation | null;
 }
 
 const formatTime = (timeStr: string) => {
-  const date = new Date(timeStr);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const date = new Date(timeStr.replace(" ", "T"));
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 };
 
-const getGroupLabel = (groupDateStr: string): string => {
-  // groupDateStr is in "YYYY-MM-DD"
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  const todayStr = today.toISOString().split("T")[0];
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
-
-  if (groupDateStr === todayStr) return "Oggi";
-  if (groupDateStr === tomorrowStr) return "Domani";
-  
-  // Otherwise, format as "Giovedì 01/12/2025"
-  const d = new Date(groupDateStr);
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  };
-  let formatted = d.toLocaleDateString('it-IT', options).replace(/,/g, '');
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-};
-
-const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reservations }) => {
-  if (reservations.length === 0) {
+const FutureReservationsCard: React.FC<FutureReservationsCardProps> = ({ reservations, currentReservation }) => {
+  // If there are no reservations at all and no current reservation, show a message.
+  if (!currentReservation && reservations.length === 0) {
     return (
-      <div className="h-full bg-black/20 text-white overflow-hidden p-4">
-        <div className="text-center text-lg text-white/70">
-          Non ci sono prenotazioni attive
+      <div className="h-full bg-black/20 rounded-lg text-white overflow-hidden p-4">
+        <div className="text-center text-xs text-white/70">
+          Non ci sono prenotazioni future
         </div>
       </div>
     );
   }
-
-  // Group reservations by the "data" field.
-  const grouped = reservations.reduce((acc: { [key: string]: FutureReservation[] }, res) => {
+  
+  // Group future reservations by date.
+  const grouped = reservations.reduce((acc: { [date: string]: FutureReservation[] }, res) => {
     if (!acc[res.data]) {
       acc[res.data] = [];
     }
     acc[res.data].push(res);
     return acc;
-  }, {});
-
-  // Sort group keys (dates) in ascending order.
+  }, {} as { [date: string]: FutureReservation[] });
+  
   const sortedDates = Object.keys(grouped).sort();
 
   return (
-    <div className="h-full bg-black/20 text-white overflow-hidden flex flex-col">
-      {/* Card Header */}
-      <div className="bg-black/40 py-4 px-4">
-        <h2 className="text-base font-bold">Prossime prenotazioni</h2>
-      </div>
-      {/* Grouped Table for Reservations */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full divide-y divide-white/20">
-          <tbody>
-            {sortedDates.map((dateKey) => (
-              <React.Fragment key={dateKey}>
-                {/* Group Header Row */}
-                <tr>
-                  <td colSpan={3} className="px-4 py-1 text-[1rem] font-medium text-white bg-black/30">
-                    {getGroupLabel(dateKey)}
-                  </td>
-                </tr>
-                {/* Sub-header Row for Columns */}
-                <tr className="bg-black/30">
-                  <th className="px-4 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
-                    Prenotazione di
-                  </th>
-                  <th className="px-2 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
-                    Orario
-                  </th>
-                  <th className="px-2 py-1 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
-                    Tipologia
-                  </th>
-                </tr>
-                {grouped[dateKey].map((res, index) => (
-                  <tr key={index} className="border-b border-white/20">
-                    <td className="px-4 py-4 whitespace-nowrap text-[1rem] text-white">
-                      <div className="flex items-center space-x-2">
-                        {res.userPic ? (
-                          <img
-                            src={res.userPic}
-                            alt={`${res.user_nome} ${res.user_cognome}`}
-                            className="w-6 h-6 rounded-full"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-white text-black/90 flex items-center justify-center text-[0.8rem] font-medium">
-                            {res.user_nome.charAt(0).toUpperCase()}{res.user_cognome.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <span>{res.user_nome} {res.user_cognome}</span>
-                          {res.n_partecipanti > 1 && (
-                            <div className="text-[0.8rem] text-white/70">
-                              e altri {res.n_partecipanti}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-[1rem] text-white">
-                      <span>{formatTime(res.ora_inizio)} - {formatTime(res.ora_fine)}</span>
-                    </td>
-                    <td className="px-2 py-1 whitespace-nowrap text-[1rem] text-white">
-                      {res.tipologia}
-                    </td>
-                  </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="h-full bg-black/20 rounded-lg text-white overflow-hidden flex flex-col">
+      {/* Featured Section: Display current reservation at the top (if available) */}
+      {currentReservation && (
+        <div className="border-b border-white/20">
+          <div className="px-3 py-2 text-[1.2rem] font-medium text-white bg-black/30">
+            <div className="text-white/7">Prenotazione corrente</div>
+          </div>
+          <div className="flex items-center space-x-8 px-2 py-6 pulse">
+            {/* Left: Avatar and user info */}
+            <div className="flex items-center space-x-2">
+              <img
+                src={currentReservation.userPic}
+                alt={`${currentReservation.user_nome} ${currentReservation.user_cognome}`}
+                className="w-8 h-8 rounded-full"
+              />
+              <div>
+              <div className="font-bold text-sm flex flex-col">
+                {currentReservation.user_nome} {currentReservation.user_cognome}
+                <span className="text-[0.8rem] font-normal">e altri {currentReservation.n_partecipanti}</span>
+              </div>
+
+              </div>
+            </div>
+            {/* Right: Reservation details */}
+            <div className="flex space-x-4">
+              <div className="flex items-center space-x-8">
+                <span className="text-[1rem]">{formatTime(currentReservation.ora_inizio)} - {formatTime(currentReservation.ora_fine)}</span>
+                <span className="text-[1rem]">{currentReservation.tipologia}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Grouped Future Reservations */}
+      {sortedDates.map((dateKey) => (
+        <React.Fragment key={dateKey}>
+          {/* Group Header */}
+          <div className="px-2 py-1 text-[0.8rem] font-medium text-white bg-black/30">
+            {dateKey === new Date().toISOString().split("T")[0]
+              ? "Oggi"
+              : (() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+                  if (dateKey === tomorrowStr) return "Domani";
+                  const d = new Date(dateKey);
+                  const options: Intl.DateTimeFormatOptions = {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: 'long'
+                  };
+                  return d.toLocaleDateString('it-IT', options);
+                })()}
+          </div>
+          {/* Sub-header for columns */}
+          {/*}<div className="flex bg-black/30">
+            <div className="px-2 py-1 w-1/3 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
+              Utente
+            </div>
+            <div className="px-2 py-1 w-1/3 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
+              Orario
+            </div>
+            <div className="px-2 py-1 w-1/3 text-left text-[0.8rem] font-medium text-white uppercase tracking-wider">
+              Tipologia
+            </div>
+          </div>{*/}
+          {grouped[dateKey].map((res, index) => (
+            <div key={index} className="flex items-center border-b border-white/20">
+              <div className="px-2 py-1 w-1/3 text-[0.8rem] text-white">
+                <div className="flex items-center space-x-2">
+                  <img
+                    src={res.userPic}
+                    alt={`${res.user_nome} ${res.user_cognome}`}
+                    className="w-4 h-4 rounded-full"
+                  />
+                  <div>
+                    <span>{res.user_nome} {res.user_cognome}</span>
+                    {res.n_partecipanti > 1 && (
+                      <div className="text-[0.6rem] text-white/70">e altri {res.n_partecipanti}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="px-2 py-1 w-1/3 text-[0.8rem] text-white">
+                <span>{formatTime(res.ora_inizio)} - {formatTime(res.ora_fine)}</span>
+              </div>
+              <div className="px-2 py-1 w-1/3 text-[0.8rem] text-white">
+                {res.tipologia}
+              </div>
+            </div>
+          ))}
+        </React.Fragment>
+      ))}
     </div>
   );
 };

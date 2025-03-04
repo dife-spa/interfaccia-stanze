@@ -65,7 +65,7 @@ const InterfacePage = () => {
       </div>
       <div className="flex w-full h-full">
         {/* Left Column (≈60% width) */}
-        <div className="w-[60%] relative p-4 md:p-8 flex flex-col">
+        <div className="w-[50%] relative p-4 md:p-8 flex flex-col">
           {/* Top Row: Only DigitalClock on left */}
           <div className="mb-4">
             <DigitalClock />
@@ -95,10 +95,13 @@ const InterfacePage = () => {
           </div>
         </div>
         {/* Right Column (≈40% width) */}
-        <div className="w-[40%] relative flex flex-col gap-y-4 p-4 md:p-8">
+        <div className="w-[50%] relative flex flex-col gap-y-4 p-4 md:p-8">
           {/* Top: FutureReservationsCard */}
           <div className="w-full h-full">
-            <FutureReservationsCard reservations={futureReservations} />
+            <FutureReservationsCard
+              reservations={futureReservations}
+              currentReservation={currentReservation}
+            />
           </div>
           {/* Bottom: OtherRoomsInfo */}
           <div className="w-full">
