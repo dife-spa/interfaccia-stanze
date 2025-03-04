@@ -1,4 +1,3 @@
-// src/hooks/useReservations.ts
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -20,59 +19,81 @@ export function useReservations(roomId?: number) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (roomId === undefined) {
-      setLoading(true);
+  // Function to fetch reservations for the given room id.
+  const fetchReservations = async (roomId: number) => {
+    setLoading(true);
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const { data, error } = await supabase
+      .from('prenotazioni')
+      .select('*')
+      .eq('id_stanza', roomId)
+      .gte('data', todayStr)
+      .order('data', { ascending: true });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
       return;
     }
-    const fetchReservations = async () => {
-      setLoading(true);
-      const today = new Date();
-      const todayStr = today.toISOString().split("T")[0];
-      const { data, error } = await supabase
-        .from('prenotazioni')
-        .select('*')
-        .eq('id_stanza', roomId)
-        .gte('data', todayStr)
-        .order('data', { ascending: true });
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-      if (data) {
-        const sortedData = data.sort((a, b) => {
-          if (a.data === b.data) {
-            return a.ora_inizio.localeCompare(b.ora_inizio);
-          }
-          return a.data.localeCompare(b.data);
-        });
-        const now = new Date();
-        const nowMinutes = now.getHours() * 60 + now.getMinutes();
-        let current: Reservation | null = null;
-        const future: Reservation[] = [];
-        sortedData.forEach((reservation: Reservation) => {
-          if (reservation.data === todayStr) {
-            const startDate = new Date(reservation.ora_inizio.replace(" ", "T"));
-            const endDate = new Date(reservation.ora_fine.replace(" ", "T"));
-            const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
-            const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
-            if (nowMinutes >= startMinutes && nowMinutes < endMinutes) {
-              current = reservation;
-            } else if (startMinutes > nowMinutes) {
-              future.push(reservation);
-            }
-          } else {
+    if (data) {
+      // Sort data by date and, if on the same day, by start time.
+      const sortedData = data.sort((a, b) => {
+        if (a.data === b.data) {
+          return a.ora_inizio.localeCompare(b.ora_inizio);
+        }
+        return a.data.localeCompare(b.data);
+      });
+
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      let current: Reservation | null = null;
+      const future: Reservation[] = [];
+      sortedData.forEach((reservation: Reservation) => {
+        if (reservation.data === todayStr) {
+          const startDate = new Date(reservation.ora_inizio.replace(" ", "T"));
+          const endDate = new Date(reservation.ora_fine.replace(" ", "T"));
+          const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+          const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+          if (nowMinutes >= startMinutes && nowMinutes < endMinutes) {
+            current = reservation;
+          } else if (startMinutes > nowMinutes) {
             future.push(reservation);
           }
-        });
-        setCurrentReservation(current);
-        setFutureReservations(future);
-      }
-      setLoading(false);
-    };
+        } else {
+          future.push(reservation);
+        }
+      });
+      setCurrentReservation(current);
+      setFutureReservations(future);
+    }
+    setLoading(false);
+  };
 
-    fetchReservations();
+  useEffect(() => {
+    if (roomId === undefined) return;
+    fetchReservations(roomId);
+
+    // Subscribe to realtime changes in the "prenotazioni" table for this room.
+    const subscription = supabase
+      .channel(`reservations_room_${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prenotazioni',
+          filter: `id_stanza=eq.${roomId}`,
+        },
+        (payload) => {
+          // When any change occurs, re-fetch reservations.
+          fetchReservations(roomId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [roomId]);
 
   return { currentReservation, futureReservations, loading, error };
