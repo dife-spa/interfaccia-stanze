@@ -19,7 +19,6 @@ export function useReservations(roomId?: number) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to fetch reservations for the given room id.
   const fetchReservations = async (roomId: number) => {
     setLoading(true);
     const today = new Date();
@@ -36,14 +35,13 @@ export function useReservations(roomId?: number) {
       return;
     }
     if (data) {
-      // Sort data by date and, if on the same day, by start time.
+      // Sort data by date and then by start time for reservations on the same day.
       const sortedData = data.sort((a, b) => {
         if (a.data === b.data) {
           return a.ora_inizio.localeCompare(b.ora_inizio);
         }
         return a.data.localeCompare(b.data);
       });
-
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       let current: Reservation | null = null;
@@ -71,9 +69,16 @@ export function useReservations(roomId?: number) {
 
   useEffect(() => {
     if (roomId === undefined) return;
+
+    // Initial fetch.
     fetchReservations(roomId);
 
-    // Subscribe to realtime changes in the "prenotazioni" table for this room.
+    // Polling: re-fetch reservations every 60 seconds (adjust as needed).
+    const intervalId = setInterval(() => {
+      fetchReservations(roomId);
+    }, 60000);
+
+    // Realtime subscription for any changes.
     const subscription = supabase
       .channel(`reservations_room_${roomId}`)
       .on(
@@ -85,13 +90,14 @@ export function useReservations(roomId?: number) {
           filter: `id_stanza=eq.${roomId}`,
         },
         (payload) => {
-          // When any change occurs, re-fetch reservations.
+          // When a change occurs, re-fetch reservations.
           fetchReservations(roomId);
         }
       )
       .subscribe();
 
     return () => {
+      clearInterval(intervalId);
       supabase.removeChannel(subscription);
     };
   }, [roomId]);
